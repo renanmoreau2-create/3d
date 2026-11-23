@@ -3548,7 +3548,6 @@ function screenHome() {
       <div class="meta">${nd} décisions · ${nf} fins · ${s.duration}${hasSa(s) ? " · arrêts sur image" : ""}${played ? ` · ${played} partie${played > 1 ? "s" : ""} ici` : ""}</div>
       <button class="btn go" type="button" data-play="${s.id}" aria-label="Jouer le scénario ${s.num} : ${esc(plain(s.title))}">Jouer</button></article>`;
   }).join("");
-  const saNums = LIST.filter(hasSa).map(s => s.num), noTestNums = LIST.filter(s => !hasTest(s)).map(s => s.num);
   const steps = LIVE.on
     ? ["Choisissez le scénario, puis créez la séance.", "Projetez le QR code : chacun rejoint sur son téléphone et reçoit un numéro, sans rien installer.", "Suivez l’avancement en direct, puis menez le débriefing guidé, étape par étape."]
     : ["Choisissez le scénario, puis créez la séance : un code court s’affiche.", "Chaque stagiaire ouvre le jeu sur son poste et saisit ce code.", "En fin de partie, saisissez leurs codes de partie, puis menez le débriefing guidé."];
@@ -3568,11 +3567,6 @@ function screenHome() {
     ${COLL.slogan ? `<p class="slogan">${esc(COLL.slogan)}${COLL.slogan2 ? ` <span>${esc(COLL.slogan2)}</span>` : ""}</p>` : ""}
     <div class="start">${LIVE.hash ? join + anim : anim + join}</div>
     <div class="solo-h"><h2>Jouer seul, pour découvrir</h2><p class="pitch">${COLL.pitch}</p></div>
-    <div class="panel"><div class="opts-solo"><span>Options de la partie libre :</span>
-        <label><input type="checkbox" id="o-test"${st.opt.test ? " checked" : ""}> questionnaires et confiance${noTestNums.length ? ` (sauf scénario${noTestNums.length > 1 ? "s" : ""} ${noTestNums.join(" et ")})` : ""}</label>
-        ${saNums.length ? `<label><input type="checkbox" id="o-sa"${st.opt.sa ? " checked" : ""}> arrêts sur image : ce que vous aviez repéré (scénario${saNums.length > 1 ? "s" : ""} ${saNums.join(" et ")})</label>` : ""}
-        <label><input type="checkbox" id="o-press"${st.opt.pressure ? " checked" : ""}> pression : ${LIST[0].pressureLimit || 60}${NB}s par décision (expérimental)</label></div>
-    </div>
     <div class="scen">${cards}</div>
     ${h.length ? `<div class="links"><button class="linkbtn" type="button" id="b-hist">Parties jouées sur cet appareil (${h.length})</button></div>` : ""}
     <p class="foot">${COLL.foot}</p></section>`;
