@@ -669,6 +669,18 @@ ul.plain { margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.6; }
 .st-card .join input { text-transform: uppercase; }
 .hero .solo-h { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; border-top: 1px solid var(--line); padding-top: 18px; }
 .hero .solo-h h2 { margin: 0; font-family: var(--f-disp); font-weight: 800; text-transform: uppercase; font-size: 22px; }
+
+/* v0.5 · jetons : visibles mais neutres (un jeton n'est pas toujours un avantage) */
+.rows .r.tok { align-items: flex-start; gap: 12px; background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 12px 14px; margin: 4px 0; text-transform: none; letter-spacing: 0; }
+.rows .r.tok + .r, .rows .r + .r.tok { border-top: none; }
+.rows .r.tok .bico { width: 38px; height: 38px; flex: none; border-radius: 50%; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: center; }
+.rows .r.tok .bico svg { width: 22px; height: 22px; }
+.rows .r.tok .btxt { display: flex; flex-direction: column; gap: 3px; }
+.rows .r.tok .bhead { font-family: var(--f-disp); font-weight: 800; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); }
+.rows .r.tok .bdesc { font-family: var(--f-read); font-weight: 400; font-size: 14.5px; line-height: 1.4; color: var(--ink-2); }
+.bpill { display: inline-block; align-self: flex-start; font-family: var(--f-disp); font-weight: 800; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; background: var(--ink); color: var(--paper); border-radius: 6px; padding: 1px 7px; }
+.notice.tok { border: 2px solid var(--ink); background: #fff; }
+.legend .lg-bonus .bpill { margin-right: 2px; }
 </style>
 </head>
 <body>
@@ -3371,27 +3383,27 @@ function applyChangeS(S, sc, ch, fx) {
   const pre = ch.if && ch.if.indexOf("not:") === 0 ? "Sans le jeton " + ch.if.slice(4) + NB + ": " : "";
   if (ch.res) {
     const r = Rs(sc, ch.res); changeResS(S, sc, ch.res, ch.d, fx);
-    let t = ch.d > 0 ? (r.display === "stars" ? "Gagnez " : "Reprenez ") + qty(r, ch.d) : "Rendez " + qty(r, -ch.d);
+    let t = ch.d > 0 ? "Vous obtenez " + qty(r, ch.d) : "Vous perdez " + qty(r, -ch.d);
     if (pre) t = pre + lc(t);
-    return { ic: resIcon(r, ch.d > 0), txt: t };
+    return { ic: resIcon(r, ch.d > 0), txt: t, kind: ch.d > 0 ? "gain" : "loss" };
   }
   if (S.tok.has(ch.tok)) return null;
   S.tok.add(ch.tok); fx.tok(ch.tok);
-  return { ic: sc.tokenIcons[ch.tok] || "info", txt: "Prenez le jeton " + ch.tok };
+  return { ic: sc.tokenIcons[ch.tok] || "info", txt: "Vous obtenez un jeton : " + ch.tok, bonus: ch.tok };
 }
 function effectS(S, sc, e, fx) {
   if (!condS(S, e.if)) return null;
   const r = Rs(sc, e.res); let phrase = "";
   if (e.type === "drain") {
-    if ((S.res[e.res] || 0) > 0) { changeResS(S, sc, e.res, -1, fx); phrase = "rendez " + qty(r, 1); }
+    if ((S.res[e.res] || 0) > 0) { changeResS(S, sc, e.res, -1, fx); phrase = "vous perdez " + qty(r, 1); }
     else if (e.fb) {
       const f = Rs(sc, e.fb);
-      if ((S.res[e.fb] || 0) > 0) { changeResS(S, sc, e.fb, -1, fx); phrase = "plus " + de(r.unit) + r.unit + ", rendez " + qty(f, 1); }
-      else phrase = "plus " + de(r.unit) + r.unit + " ni " + de(f.unit) + f.unit + " à rendre";
+      if ((S.res[e.fb] || 0) > 0) { changeResS(S, sc, e.fb, -1, fx); phrase = "plus " + de(r.unit) + r.unit + ", vous perdez " + qty(f, 1); }
+      else phrase = "plus " + de(r.unit) + r.unit + " ni " + de(f.unit) + f.unit + " à perdre";
     }
   } else if (e.type === "add") {
     const real = changeResS(S, sc, e.res, e.d, fx);
-    phrase = e.d < 0 ? (real ? "rendez " + qty(r, -e.d) : "vous n’en aviez déjà plus") : "reprenez " + qty(r, e.d);
+    phrase = e.d < 0 ? (real ? "vous perdez " + qty(r, -e.d) : "vous n’en aviez déjà plus") : "vous obtenez " + qty(r, e.d);
   }
   return { ic: e.sound === "bell" ? "bell" : resIcon(r, false), head: e.head, txt: e.text.replace("{effet}", phrase), sound: e.sound };
 }
@@ -3408,7 +3420,7 @@ function enterS(S, sc, n, fx) {
   if (out.kind === "decision") {
     const d = sc.decisions[n];
     out.front = d.front.filter(p => condS(S, p.if));
-    d.notes.forEach(x => { if (condS(S, x.if)) out.notes.push({ ic: noteIconS(sc, x.if), head: x.head, txt: x.text }); });
+    d.notes.forEach(x => { if (condS(S, x.if)) out.notes.push({ ic: noteIconS(sc, x.if), head: x.head, txt: x.text, bonus: !!x.if && x.if.indexOf("has:") === 0 }); });
     let delay = 300;
     if (d.cue) { out.cues.push([d.cue, 250]); delay = SND.cueLen(d.cue); }
     (d.enter || []).forEach(e => {
@@ -3503,7 +3515,7 @@ function inGame() { return SC && ["quest", "rules", "card", "reaction", "wait", 
 function renderHud() {
   const showG = SC && st.g && ["card", "reaction", "wait", "debrief", "avis", "code"].includes(st.screen);
   let g = "";
-  if (showG) g = `<div class="gauges">${SC.resources.map((r, i) => gaugeHtml(r, i, st.g.res[r.key] || 0)).join("")}${Object.keys(SC.tokens).map((k, i) => SC.hideTokens && !st.g.tok.has(k) ? "" : `<span class="chip${st.g.tok.has(k) ? " on" : ""}" id="g-k-${i}">${ic(SC.tokenIcons[k])}${esc(k)}</span>`).join("")}</div>`;
+  if (showG) g = `<div class="gauges">${SC.resources.map((r, i) => gaugeHtml(r, i, st.g.res[r.key] || 0)).join("")}${Object.keys(SC.tokens).map((k, i) => SC.hideTokens && !st.g.tok.has(k) ? "" : `<span class="chip tok${st.g.tok.has(k) ? " on" : ""}" id="g-k-${i}" title="${st.g.tok.has(k) ? "Jeton obtenu : " : "Jeton non obtenu : "}${esc(k)}">${ic(SC.tokenIcons[k])}${esc(k)}</span>`).join("")}</div>`;
   let lamp = "";
   if (SC && ["reaction", "wait", "debrief", "avis", "code"].includes(st.screen) && st.card) lamp = `<span class="annun ${SC.lamp.colors[st.card] || ""}">${esc(SC.lamp.label)}</span>`;
   else if (SC && st.screen === "card") lamp = `<span class="annun idle">${esc(SC.lamp.label)}</span>`;
@@ -3536,7 +3548,9 @@ function pileBar() {
 function P(list) { return list.map(p => `<p${p.radio ? ' class="radio"' : ""}>${p.t}</p>`).join(""); }
 function rowsHtml(rows, note) {
   if (!rows.length && !note) return "";
-  return `<div class="rows">${rows.map((r, i) => `<div class="r new" style="animation-delay:${i * 0.18}s">${ic(r.ic)}<span>${esc(r.txt)}</span></div>`).join("")}${note ? `<small>${note}</small>` : ""}</div>`;
+  return `<div class="rows">${rows.map((r, i) => r.bonus
+    ? `<div class="r new tok" style="animation-delay:${i * 0.18}s"><span class="bico">${ic(r.ic)}</span><span class="btxt"><span class="bpill">Nouveau jeton</span><span class="bhead">${esc(r.txt)}</span>${SC.tokens[r.bonus] ? `<span class="bdesc">${SC.tokens[r.bonus]} Il comptera pour la suite.</span>` : ""}</span></div>`
+    : `<div class="r new${r.kind ? " " + r.kind : ""}" style="animation-delay:${i * 0.18}s">${ic(r.ic)}<span>${esc(r.txt)}</span></div>`).join("")}${note ? `<small>${note}</small>` : ""}</div>`;
 }
 
 function screenHome() {
@@ -3658,7 +3672,7 @@ function screenRules() {
     `Lisez d’abord votre <b>${lc(dn)}</b>, en commençant par <b>${first.label}</b>. Il reste ouvert à tout moment (bouton Dossier), même pendant une décision : le chrono tourne.`,
     "Sur une carte <b>DÉCISION</b>, lisez le recto puis retournez la carte : le chrono démarre.",
     "Choisissez une option, puis <b>annoncez</b> la carte suivante." + (cr ? ` Les ${SC.costName} se paient en ${cr.units} ; sans assez de jetons, l’option est fermée.` : "") + (anyFree ? " Certains jetons rendent une option gratuite." : ""),
-    "Pas de retour en arrière, aucune carte lue hors de votre parcours. Les jetons" + (SC.resources.some(r => r.display === "stars") ? " et les étoiles" : "") + " se mettent à jour seuls.",
+    "Pas de retour en arrière, aucune carte lue hors de votre parcours. Les jetons" + (SC.resources.some(r => r.display === "stars") ? " et les étoiles" : "") + " se mettent à jour seuls." + (Object.keys(SC.tokens).length ? " Certaines décisions vous font obtenir un <b>jeton</b>, affiché en haut de l’écran : il comptera pour la suite." : ""),
     "La partie s’arrête sur une carte <b>FIN</b>" + (hasQ ? " et une dernière question" : "") + ". Un débriefing guidé suit : vos réactions, votre parcours, les options que vous n’avez pas prises, puis le vocabulaire qui permet d’en parler.",
     "Il n’y a ni score ni hasard. Décidez comme vous le feriez vraiment, pas comme vous pensez qu’on l’attend de vous."
   ];
@@ -3666,8 +3680,8 @@ function screenRules() {
   if (st.mode.sa) rules.splice(st.mode.test ? 4 : 3, 0, "Après certaines annonces, un <b>arrêt sur image</b> : vous cochez ce que vous aviez en tête au moment de décider, sans rouvrir le dossier. Le corrigé arrive au débriefing.");
   if (st.mode.pressure) rules.splice(2, 0, `<b>Mode pression</b> : ${limit()} secondes par décision, dossier compris. À l’échéance, la réponse que l’on donne sans réfléchir s’applique.`);
   const legend = SC.resources.map(r => `<div>${r.display === "stars" ? `<span style="color:#8a5a00">${I.star}</span>` : ic(r.icon)}<span><b>${esc(r.key)}</b> · ${r.desc || ""} ${r.legend || r.start + " au départ."}</span></div>`).join("")
-    + (SC.hideTokens ? `<div>${I.info}<span><b>Jetons</b> · Selon vos décisions, des jetons s’ajoutent à votre tableau de bord. Ils comptent pour la suite.</span></div>`
-      : Object.keys(SC.tokens).map(k => `<div>${ic(SC.tokenIcons[k])}<span><b>${esc(k)}</b> · ${SC.tokens[k]}</span></div>`).join(""));
+    + (SC.hideTokens ? `<div class="lg-bonus">${I.info}<span><span class="bpill">Jetons</span> Selon vos décisions, vous obtenez des jetons, affichés en haut de l’écran. Ils comptent pour la suite.</span></div>`
+      : Object.keys(SC.tokens).map(k => `<div class="lg-bonus">${ic(SC.tokenIcons[k])}<span><span class="bpill">Jeton</span> <b>${esc(k)}</b> · ${SC.tokens[k]}</span></div>`).join(""));
   const tags = (st.session ? `<span class="tag on">Séance ${esc(st.session)}</span>` : "") + (st.mode.test ? '<span class="tag on">Questionnaires</span>' : "") + (st.mode.sa ? '<span class="tag on">Arrêts sur image</span>' : "") + (st.mode.pressure ? '<span class="tag on">Pression</span>' : "");
   return `<article class="card"><div class="band dark"><div class="lab">Avant de commencer<small>Scénario ${SC.num} · règle du jeu</small></div><div class="num who">${esc(st.code)}</div></div>
     <div class="head"><h2>${SC.title}</h2></div>${tags ? `<div class="actions">${tags}</div>` : ""}
@@ -3677,7 +3691,9 @@ function screenRules() {
     <div class="actions"><button class="btn ghost" type="button" id="b-read">Lire le ${lc(dn)}</button><button class="btn go" type="button" id="b-c1">Prendre la carte ${SC.start}</button></div></article>`;
 }
 function decisionFront(n, d) {
-  const notes = st.notes.map(x => `<div class="notice">${ic(x.ic)}<div><b>${x.head}</b><br>${x.txt}</div></div>`).join("");
+  const notes = st.notes.map(x => x.bonus
+    ? `<div class="notice tok">${ic(x.ic)}<div><b>${x.head}</b><br>${x.txt}</div></div>`
+    : `<div class="notice">${ic(x.ic)}<div><b>${x.head}</b><br>${x.txt}</div></div>`).join("");
   return `<div class="band dark"><div class="lab">Décision ${d.idx}/${nDec()}<small>Lisez, puis retournez la carte</small></div><div class="num">${n}</div></div>
     <div class="head"><h2>${d.title}</h2>${SC.art[n] || ""}</div>
     <div class="txt">${P(st.front)}</div>${notes}${d.tail ? `<p class="tail">${d.tail}</p>` : ""}
